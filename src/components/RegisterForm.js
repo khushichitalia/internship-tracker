@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import {auth} from '../FireBase';
 import { updateProfile } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
-  
+  const navigate = useNavigate();
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
@@ -17,7 +21,16 @@ function RegisterForm() {
       await updateProfile(auth.currentUser, {
         displayName: username,
       });
-      alert('User registered successfully!');
+      toast.success("User registered successfully!", {
+        position: "top-center",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        onClose: () => navigate('/'),
+      });      
     }
     catch (err) {
       setError(err.message);
@@ -25,6 +38,7 @@ function RegisterForm() {
   }
 
   return (
+    <>
     <form onSubmit={handleRegister}>
       <div className="form-group">
         <label>Username</label>
@@ -57,6 +71,8 @@ function RegisterForm() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <button type="submit" className="login-btn">CREATE ACCOUNT</button>
     </form>
+    <ToastContainer />
+    </>
   );
 }
 
