@@ -9,7 +9,6 @@ import 'react-toastify/dist/ReactToastify.css';
 function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -18,9 +17,6 @@ function RegisterForm() {
     setError('');
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(auth.currentUser, {
-        displayName: username,
-      });
       toast.success("User registered successfully!", {
         position: "top-center",
         autoClose: 500,
@@ -40,16 +36,6 @@ function RegisterForm() {
   return (
     <>
     <form onSubmit={handleRegister}>
-      <div className="form-group">
-        <label>Username</label>
-        <input 
-          id="username" 
-          type="text" 
-          value = {username}
-          onChange={(e)=>setUsername(e.target.value)}
-          placeholder="Type your username" 
-          />
-      </div>
       <div className="form-group">
         <label>Email</label>
         <input 
