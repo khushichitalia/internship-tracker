@@ -58,4 +58,27 @@
   .job-link:hover {
     text-decoration: underline;
   }
+
+  .dropdown-container {
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .dropdown-container input {
+    padding: 0.5rem;
+    width: 60%;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  
+  .dropdown-container select {
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 60%;
+  }
+  
   
