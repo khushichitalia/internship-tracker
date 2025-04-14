@@ -1,4 +1,6 @@
+// JobBoard.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import './JobBoard.css';
 
@@ -13,26 +15,6 @@ const companies = [
   { name: 'Affirm', token: 'affirm' },
   { name: 'Algolia', token: 'algolia' },
   { name: 'Robinhood', token: 'robinhood' },
-  { name: 'Doordash', token: 'doordash' },
-  { name: 'Discord', token: 'discord' },
-  { name: 'Coupang', token: 'coupang' },
-  { name: 'Plaid', token: 'plaid' },
-  { name: 'Blend', token: 'blend' },
-  { name: 'Betterment', token: 'betterment' },
-  { name: 'Benchling', token: 'benchling' },
-  { name: 'Grammarly', token: 'grammarly' },
-  { name: 'Notion', token: 'notion' },
-  { name: 'Gusto', token: 'gusto' },
-  { name: 'Oscar Health', token: 'oscar' },
-  { name: 'Lyft', token: 'lyft' },
-  { name: 'Everlaw', token: 'everlaw' },
-  { name: 'Redfin', token: 'redfin' },
-  { name: 'Wealthfront', token: 'wealthfront' },
-  { name: 'Turo', token: 'turo' },
-  { name: 'TrueLayer', token: 'truelayer' },
-  { name: 'Checkr', token: 'checkr' },
-  { name: 'Nuro', token: 'nuro' },
-  { name: 'Instabase', token: 'instabase' }
 ];
 
 function JobBoard() {
@@ -40,6 +22,7 @@ function JobBoard() {
   const [selectedCompany, setSelectedCompany] = useState(companies[0].token);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchJobs = (token) => {
     setLoading(true);
@@ -100,20 +83,27 @@ function JobBoard() {
                 <h3 className="job-title">{job.title}</h3>
                 <p className="job-location">{job.location?.name}</p>
                 <p className="job-type">
-                  {
-                    job.metadata?.find(
-                      (meta) => meta.name === 'Workplace Type'
-                    )?.value || 'N/A'
-                  }
+                  {job.metadata?.find((meta) => meta.name === 'Workplace Type')?.value || 'N/A'}
                 </p>
-                <a
-                  href={job.absolute_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  <button
                   className="job-link"
+                  onClick={() => {
+                    window.open(job.absolute_url, '_blank');
+
+                    navigate('/home', {
+                      state: {
+                        autofillInternship: {
+                          company: job.company_name || selectedCompany,
+                          role: job.title,
+                          status: 'Applied',
+                          deadline: ''
+                        }
+                      }
+                    });
+                  }}
                 >
                   View & Apply
-                </a>
+                </button>
               </li>
             ))}
           </ul>
