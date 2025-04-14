@@ -3,7 +3,7 @@ import Navbar from './components/Navbar';
 import AddInternshipForm from './components/AddInternshipForm';
 import './InternshipTracker.css';
 import { db, auth } from './FireBase';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useLocation } from 'react-router-dom';
 
 function InternshipTracker() {
@@ -15,7 +15,7 @@ function InternshipTracker() {
     status: '',
     deadline: ''
   });
-  const [hasAutoAdded, setHasAutoAdded] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   const location = useLocation();
   const autofillInternship = location.state?.autofillInternship;
@@ -41,24 +41,22 @@ function InternshipTracker() {
 
   useEffect(() => {
     if (!autofillInternship) return;
-  
+
     const key = `${autofillInternship.company}-${autofillInternship.role}`;
-  
-    // ✅ Immediately mark as added to prevent duplicate trigger
+
     if (sessionStorage.getItem(key)) {
       console.log('Already added in this session');
       return;
     }
     sessionStorage.setItem(key, 'true');
-  
+
     const addPrefilledInternship = async () => {
       try {
         const userId = auth.currentUser?.uid;
         if (!userId) throw new Error('User not logged in');
-  
+
         const userInternshipsRef = collection(db, 'users', userId, 'internships');
-  
-        // Optional: Double-check from database side
+
         const snapshot = await getDocs(userInternshipsRef);
         const alreadyExists = snapshot.docs.some((doc) => {
           const data = doc.data();
@@ -67,7 +65,7 @@ function InternshipTracker() {
             data.role === autofillInternship.role
           );
         });
-  
+
         if (!alreadyExists) {
           await addDoc(userInternshipsRef, autofillInternship);
           fetchInternships();
@@ -75,13 +73,13 @@ function InternshipTracker() {
         } else {
           console.log('Firestore already has this internship.');
         }
-  
+
         window.history.replaceState({}, document.title);
       } catch (err) {
         console.error('Error auto-adding internship:', err);
       }
     };
-  
+
     addPrefilledInternship();
   }, [autofillInternship]);
 
@@ -97,13 +95,33 @@ function InternshipTracker() {
       if (!userId) throw new Error('User not logged in');
 
       const userInternshipsRef = collection(db, 'users', userId, 'internships');
-      await addDoc(userInternshipsRef, formData);
+
+      if (editId) {
+        const internshipDoc = doc(db, 'users', userId, 'internships', editId);
+        await updateDoc(internshipDoc, formData);
+      } else {
+        await addDoc(userInternshipsRef, formData);
+      }
 
       setFormData({ company: '', role: '', status: '', deadline: '' });
+      setEditId(null);
       setShowModal(false);
       fetchInternships();
     } catch (err) {
-      console.error('Error adding internship', err);
+      console.error('Error submitting internship', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error('User not logged in');
+
+      const internshipDoc = doc(db, 'users', userId, 'internships', id);
+      await deleteDoc(internshipDoc);
+      fetchInternships();
+    } catch (err) {
+      console.error('Error deleting internship:', err);
     }
   };
 
@@ -131,8 +149,22 @@ function InternshipTracker() {
                 <td>{item.status}</td>
                 <td>{item.deadline}</td>
                 <td>
-                  <button className="action-btn">Edit</button>
-                  <button className="action-btn danger">Delete</button>
+                  <button
+                    className="action-btn"
+                    onClick={() => {
+                      setFormData(item);
+                      setEditId(item.id);
+                      setShowModal(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="action-btn danger"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -148,7 +180,10 @@ function InternshipTracker() {
             formData={formData}
             onChange={handleChange}
             onSubmit={handleSubmit}
-            onClose={() => setShowModal(false)}
+            onClose={() => {
+              setShowModal(false);
+              setEditId(null);
+            }}
           />
         )}
       </div>
