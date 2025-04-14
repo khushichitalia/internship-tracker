@@ -30,7 +30,7 @@ function LoginForm() {
     <>
     <form onSubmit={handleLogin}>
       <div className="form-group">
-        <label htmlFor="email">Username</label>
+        <label htmlFor="email">Email</label>
         <input 
           id="email" 
           type="email" 

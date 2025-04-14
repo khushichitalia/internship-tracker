@@ -5,13 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import './Navbar.css'; 
 
 function Navbar() {
-  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
-
-  const toggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -28,13 +22,7 @@ function Navbar() {
       <div className="navbar-links">
         <a href="#view">Internships</a>
         <div className="settings-dropdown">
-          <a href="#settings" onClick={toggleDropdown}>Settings</a>
-          {showDropdown && (
-            <div className="dropdown-menu">
-              <a href="#account">Account</a>
-              <a href="#logout" onClick={handleLogout}>Log Out</a>
-            </div>
-          )}
+        <a href="#logout" onClick={handleLogout}>Log Out</a>
         </div>
       </div>
     </nav>
