@@ -1,44 +1,18 @@
-import React, { use, useState } from 'react';
-import {signOut } from 'firebase/auth';
-import { auth } from '../FireBase';
-import { useNavigate } from 'react-router-dom';
-import './Navbar.css'; 
+import React from 'react';
+import { Link } from 'react-router-dom';
+import './Navbar.css'; // Optional styling
 
-function Navbar() {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const navigate = useNavigate();
-
-  const toggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-    }
-    catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
+const Navbar = () => {
   return (
     <nav className="navbar">
-      <div className="navbar-title">Internship Tracker</div>
-      <div className="navbar-links">
-        <a href="#view">Internships</a>
-        <div className="settings-dropdown">
-          <a href="#settings" onClick={toggleDropdown}>Settings</a>
-          {showDropdown && (
-            <div className="dropdown-menu">
-              <a href="#account">Account</a>
-              <a href="#logout" onClick={handleLogout}>Log Out</a>
-            </div>
-          )}
-        </div>
-      </div>
+      <ul className="navbar-list">
+        <li><Link to="/home">Internships</Link></li>
+        <li><Link to="/account">Account</Link></li>
+        <li><Link to="/job-board">Job Board</Link></li>
+      </ul>
     </nav>
   );
-}
+};
 
 export default Navbar;
+    
