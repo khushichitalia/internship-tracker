@@ -1,37 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from './FireBase'; 
 import Navbar from './components/Navbar';
-import AddInternshipForm from './components/AddInternshipForm';
+import AddInternshipForm from './components/AddInternshipForm'; 
 import './InternshipTracker.css';
-import { db, auth } from './FireBase';
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { useLocation } from 'react-router-dom';
 
 function InternshipTracker() {
   const [internships, setInternships] = useState([]);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false); 
   const [formData, setFormData] = useState({
     company: '',
     role: '',
     status: '',
     deadline: ''
   });
-  const [editId, setEditId] = useState(null);
-
-  const location = useLocation();
-  const autofillInternship = location.state?.autofillInternship;
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState(null);
 
   const fetchInternships = async () => {
-    const userID = auth.currentUser?.uid;
-    if (!userID) return;
-
-    const internshipsRef = collection(db, 'users', userID, 'internships');
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+    const internshipsRef = collection(db, 'users', userId, 'internships');
     const snapshot = await getDocs(internshipsRef);
-
-    const internshipsData = snapshot.docs.map((doc) => ({
+    const internshipsData = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-
     setInternships(internshipsData);
   };
 
@@ -39,89 +34,63 @@ function InternshipTracker() {
     fetchInternships();
   }, []);
 
-  useEffect(() => {
-    if (!autofillInternship) return;
-
-    const key = `${autofillInternship.company}-${autofillInternship.role}`;
-
-    if (sessionStorage.getItem(key)) {
-      console.log('Already added in this session');
-      return;
-    }
-    sessionStorage.setItem(key, 'true');
-
-    const addPrefilledInternship = async () => {
-      try {
-        const userId = auth.currentUser?.uid;
-        if (!userId) throw new Error('User not logged in');
-
-        const userInternshipsRef = collection(db, 'users', userId, 'internships');
-
-        const snapshot = await getDocs(userInternshipsRef);
-        const alreadyExists = snapshot.docs.some((doc) => {
-          const data = doc.data();
-          return (
-            data.company === autofillInternship.company &&
-            data.role === autofillInternship.role
-          );
-        });
-
-        if (!alreadyExists) {
-          await addDoc(userInternshipsRef, autofillInternship);
-          fetchInternships();
-          console.log('Auto-added internship:', autofillInternship);
-        } else {
-          console.log('Firestore already has this internship.');
-        }
-
-        window.history.replaceState({}, document.title);
-      } catch (err) {
-        console.error('Error auto-adding internship:', err);
-      }
-    };
-
-    addPrefilledInternship();
-  }, [autofillInternship]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const userId = auth.currentUser?.uid;
-      if (!userId) throw new Error('User not logged in');
+      if (!userId) throw new Error("User not logged in");
 
-      const userInternshipsRef = collection(db, 'users', userId, 'internships');
-
-      if (editId) {
-        const internshipDoc = doc(db, 'users', userId, 'internships', editId);
-        await updateDoc(internshipDoc, formData);
-      } else {
-        await addDoc(userInternshipsRef, formData);
-      }
-
-      setFormData({ company: '', role: '', status: '', deadline: '' });
-      setEditId(null);
+      const internshipsRef = collection(db, 'users', userId, 'internships');
+      await addDoc(internshipsRef, formData);
       setShowModal(false);
+      setFormData({ company: '', role: '', status: '', deadline: '' });
       fetchInternships();
     } catch (err) {
-      console.error('Error submitting internship', err);
+      console.error('Error adding internship:', err);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (internshipId) => {
     try {
-      const userId = auth.currentUser?.uid;
-      if (!userId) throw new Error('User not logged in');
-
-      const internshipDoc = doc(db, 'users', userId, 'internships', id);
-      await deleteDoc(internshipDoc);
+      const userId = auth.currentUser.uid;
+      await deleteDoc(doc(db, 'users', userId, 'internships', internshipId));
       fetchInternships();
-    } catch (err) {
-      console.error('Error deleting internship:', err);
+    } catch (error) {
+      console.error("Error deleting internship:", error);
+    }
+  };
+
+  const handleEditClick = (internship) => {
+    setEditData(internship);
+    setShowEditModal(true);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const userId = auth.currentUser.uid;
+      const internshipRef = doc(db, 'users', userId, 'internships', editData.id);
+      await updateDoc(internshipRef, {
+        company: editData.company,
+        role: editData.role,
+        status: editData.status,
+        deadline: editData.deadline
+      });
+      setShowEditModal(false);
+      setEditData(null);
+      fetchInternships();
+    } catch (error) {
+      console.error("Error updating internship:", error);
     }
   };
 
@@ -149,28 +118,14 @@ function InternshipTracker() {
                 <td>{item.status}</td>
                 <td>{item.deadline}</td>
                 <td>
-                  <button
-                    className="action-btn"
-                    onClick={() => {
-                      setFormData(item);
-                      setEditId(item.id);
-                      setShowModal(true);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="action-btn danger"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    Delete
-                  </button>
+                  <button className="action-btn" onClick={() => handleEditClick(item)}>Edit</button>
+                  <button className="action-btn danger" onClick={() => handleDelete(item.id)}>Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
+  
         <button onClick={() => setShowModal(true)} className="add-internship">
           Add Internship
         </button>
@@ -180,11 +135,53 @@ function InternshipTracker() {
             formData={formData}
             onChange={handleChange}
             onSubmit={handleSubmit}
-            onClose={() => {
-              setShowModal(false);
-              setEditId(null);
-            }}
+            onClose={() => setShowModal(false)}
           />
+        )}
+
+        {showEditModal && editData && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Edit Internship</h3>
+              <form onSubmit={handleEditSubmit}>
+                <input 
+                  type="text" 
+                  name="company"
+                  placeholder="Company" 
+                  value={editData.company} 
+                  onChange={handleEditChange}
+                  required 
+                />
+                <input 
+                  type="text" 
+                  name="role" 
+                  placeholder="Role" 
+                  value={editData.role} 
+                  onChange={handleEditChange}
+                  required 
+                />
+                <input 
+                  type="text" 
+                  name="status" 
+                  placeholder="Status" 
+                  value={editData.status} 
+                  onChange={handleEditChange}
+                  required 
+                />
+                <input 
+                  type="date" 
+                  name="deadline" 
+                  value={editData.deadline} 
+                  onChange={handleEditChange}
+                  required 
+                />
+                <div className="modal-buttons">
+                  <button type="submit" className="submit-btn">Update</button>
+                  <button type="button" className="cancel-btn" onClick={() => setShowEditModal(false)}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </div>
